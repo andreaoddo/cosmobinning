@@ -65,7 +65,7 @@ def test_mode_counts():
 
 	exp_counts = [1, 6, 12, 8, 6, 24, 24, 0, 12, 30, 24, 24, 8]
 
-	assert all(exp_counts == bins.mode_counts())
+	assert all(exp_counts == bins.mode_counts_3d())
 
 
 def test_bin_function():
