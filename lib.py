@@ -106,22 +106,23 @@ class RedshiftSpacePowerBinner:
 		self.zero_pos = (min(self.pos) == 0)
 		self.bin_counts = bincount(self.pos, weights=bins.mode_counts_3d())
 		self.inputs_squared = arange(bins.squared_max() + 1)
-		self.isqrt = fromiter((isqrt(q2) for q2 in self.inputs_squared), dtype=int32)
+		self.positive_z = arange(bins.int_max() + 1)
+		self.cos_theta = np.zeros([len(self.inputs_squared), len(self.positive_z)])
+		np.divide(self.positive_z[None, :], npsqrt(self.inputs_squared[:, None]), out=self.cos_theta, where=(self.inputs_squared[:, None] != 0))
+		self.mask = (self.positive_z[None, :] <= npsqrt(self.inputs_squared[:, None]))
+		self.count_matrix = np.fromfunction(lambda i, j: self.counts[i-j*j], (len(self.inputs_squared), len(self.positive_z)), dtype=int32)
 
-	def single_q_contribution(self, q2: int, leg_func: Callable[[float, float], float]) -> float:
-		if q2 == 0:
-			return leg_func(0, 0)
-		q = sqrt(q2)
-		return 2 * sum(map(lambda z: leg_func(q, z / q) * self.counts[q2 - z * z], range(self.isqrt[q2]+1))) - leg_func(q, 0) * self.counts[q2]
-
-	def bin_function(self, function: Callable[[float, float], float], multipole: int) -> ndarray:
-		def leg_func(q, cos_theta):
+	def bin_function(self, function: Callable[[float | ndarray, float | ndarray], float | ndarray], multipole: int) -> ndarray:
+		def leg_func(q: float | ndarray, cos_theta: float | ndarray) -> float | ndarray:
 			return eval_legendre(multipole, cos_theta) * function(q, cos_theta)
+
+		weights = 2*np.sum(
+			leg_func(npsqrt(self.inputs_squared[:, None]), self.cos_theta) * self.count_matrix * self.mask,
+			axis = 1) - leg_func(npsqrt(self.inputs_squared), self.cos_theta[:, 0]) * self.count_matrix[:, 0]
 
 		result = bincount(
 			self.pos,
-			weights=fromiter((self.single_q_contribution(q2, leg_func) for q2 in self.inputs_squared),
-			                 dtype=np.float64, count=len(self.inputs_squared))
+			weights=weights
 		) / self.bin_counts
 		if self.zero_pos:
 			return result[1:]
