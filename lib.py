@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import numpy as np
-from numpy import ndarray, int32
-from numpy import arange, linspace, digitize, bincount, meshgrid, fromiter, flip
+from numpy import ndarray, int16, int32
+from numpy import arange, linspace, digitize, bincount, meshgrid, fromiter, flip, fromfunction, zeros, divide, array, \
+	absolute
 from numpy import sqrt as npsqrt
-from typing import Callable
-from math import isqrt, isclose, sqrt
+from numpy import sum as npsum
+from typing import Callable, Optional
+from math import isqrt, isclose
 from scipy.special import eval_legendre
 
 
@@ -74,7 +76,7 @@ class Bins:
 		count_grid_2d = bincount(x2)
 		squares = linspace(0, int_max, int_max + 1, dtype=int32) ** 2
 
-		return fromiter(self.mode_counter_generator(count_grid_2d, squares), dtype=int32)
+		return fromiter(self.mode_counter_generator(count_grid_2d, squares), dtype=int16)
 
 	def mode_counter_generator(self, count_grid: ndarray, squares: ndarray):
 		for q2 in range(self.squared_max() + 1):
@@ -99,31 +101,43 @@ class RealSpacePowerBinner:
 
 
 class RedshiftSpacePowerBinner:
-	def __init__(self, bins: Bins):
+	def __init__(self, bins: Bins, multipoles: Optional[list[int]] = None):
 		self.bins = bins
 		self.counts = bins.mode_counts_2d()
 		self.pos = bins.bin_positions()
 		self.zero_pos = (min(self.pos) == 0)
 		self.bin_counts = bincount(self.pos, weights=bins.mode_counts_3d())
 		self.inputs_squared = arange(bins.squared_max() + 1)
-		self.positive_z = arange(bins.int_max() + 1)
-		self.cos_theta = np.zeros([len(self.inputs_squared), len(self.positive_z)])
-		np.divide(self.positive_z[None, :], npsqrt(self.inputs_squared[:, None]), out=self.cos_theta, where=(self.inputs_squared[:, None] != 0))
-		self.mask = (self.positive_z[None, :] <= npsqrt(self.inputs_squared[:, None]))
-		self.count_matrix = np.fromfunction(lambda i, j: self.counts[i-j*j], (len(self.inputs_squared), len(self.positive_z)), dtype=int32)
+		self.inputs = npsqrt(self.inputs_squared)
 
-	def bin_function(self, function: Callable[[float | ndarray, float | ndarray], float | ndarray], multipole: int) -> ndarray:
-		def leg_func(q: float | ndarray, cos_theta: float | ndarray) -> float | ndarray:
-			return eval_legendre(multipole, cos_theta) * function(q, cos_theta)
+		self.z_values = arange(-bins.int_max(), bins.int_max() + 1)
+		if multipoles is None:
+			multipoles = [0, 2, 4]
+		self.multipoles = multipoles
+		arr_multipoles = array(multipoles)[:, None, None]
 
-		weights = 2*np.sum(
-			leg_func(npsqrt(self.inputs_squared[:, None]), self.cos_theta) * self.count_matrix * self.mask,
-			axis = 1) - leg_func(npsqrt(self.inputs_squared), self.cos_theta[:, 0]) * self.count_matrix[:, 0]
+		cos_theta = zeros([len(self.inputs_squared), 2 * bins.int_max() + 1])  ###
+		divide(self.z_values[None, :], self.inputs[:, None], out=cos_theta, where=(self.inputs_squared[:, None] != 0))
 
-		result = bincount(
-			self.pos,
-			weights=weights
-		) / self.bin_counts
+		self.masked_legendre_times_counts = \
+			eval_legendre(arr_multipoles, cos_theta[None, :], dtype=np.float64) * \
+			(absolute(self.z_values[None, :]) <= self.inputs[:, None]) * \
+			fromfunction(lambda i, j: self.counts[i - (j - bins.int_max()) ** 2],
+			             (len(self.inputs), len(self.z_values)), dtype=np.int16)
+		del cos_theta
+
+	def bin_function(self, power: Callable[[ndarray, ndarray], ndarray]) -> list[ndarray]:
+
+		weights = npsum(
+			self.masked_legendre_times_counts * \
+			power(self.inputs[:, None],
+			      divide(self.z_values[None, :], self.inputs[:, None], where=(self.inputs_squared[:, None] != 0)))[None, :],
+			axis=2)
+
+		binned = [(2 * l + 1) * bincount(self.pos, weights=w) / self.bin_counts for (l, w) in zip(self.multipoles, weights)]
+
 		if self.zero_pos:
-			return result[1:]
-		return result
+			for (i, b) in enumerate(binned):
+				binned[i] = b[1:]
+			return binned
+		return binned
