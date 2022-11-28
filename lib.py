@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from warnings import warn
+from time import sleep
+
 import numpy as np
 from numpy import ndarray, int16, int32
 from numpy import arange, linspace, digitize, bincount, meshgrid, fromiter, flip, fromfunction, zeros, divide, array, \
@@ -102,6 +105,7 @@ class RealSpacePowerBinner:
 
 class RedshiftSpacePowerBinner:
 	def __init__(self, bins: Bins, multipoles: Optional[list[int]] = None):
+
 		self.bins = bins
 		self.counts = bins.mode_counts_2d()
 		self.pos = bins.bin_positions()
@@ -115,6 +119,13 @@ class RedshiftSpacePowerBinner:
 			multipoles = [0, 2, 4]
 		self.multipoles = multipoles
 		arr_multipoles = array(multipoles)[:, None, None]
+
+		mem_to_be_allocated = len(self.z_values) * len(self.inputs) * len(self.multipoles) * 8
+		if mem_to_be_allocated >= (1 << 30):
+			message = f"MemoryWarning: {mem_to_be_allocated / 1024 ** 3:.2f} GB of memory are about to be allocated\n" \
+			          f"Execution will continue in 5 seconds"
+			warn(message)
+			sleep(5)
 
 		cos_theta = zeros([len(self.inputs_squared), 2 * bins.int_max() + 1])  ###
 		divide(self.z_values[None, :], self.inputs[:, None], out=cos_theta, where=(self.inputs_squared[:, None] != 0))
