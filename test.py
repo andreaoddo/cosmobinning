@@ -1,5 +1,5 @@
 import pytest
-from cosmobinning.lib import Bins, Bin, RealSpacePowerBinner
+from cosmobinning.lib import Bins, Bin, RealSpacePowerBinner, RedshiftSpacePowerBinner
 from numpy import arange, sqrt, allclose, array
 
 
@@ -38,7 +38,7 @@ def test_edges():
 def test_int_max():
 	bins = Bins.linear_bins(1, 1.5, 20)
 
-	assert 30 == bins.int_max()
+	assert 30 == bins.grid_size()
 
 
 def test_squared_max():
@@ -76,3 +76,29 @@ def test_bin_function():
 	expected = [1.2761424, 2.2308031, 3.1341592, 4.0605798, 5.0975831]
 
 	assert allclose(expected, x_binned)
+
+
+def test_redshift_space_binning_of_odd_function_returns_null_even_multipoles():
+	bins = Bins.linear_bins(1, 1, 5)
+	binner = RedshiftSpacePowerBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
+	y0, y1, y2, y3, y4, y5 = binner.bin_function(lambda k, mu: k * mu)
+
+	assert allclose(y0, 0)
+	assert not allclose(y1, 0)
+	assert allclose(y2, 0)
+	assert not allclose(y3, 0)
+	assert allclose(y4, 0)
+	assert not allclose(y5, 0)
+
+
+def test_redshift_space_binning_of_even_function_returns_null_odd_multipoles():
+	bins = Bins.linear_bins(1, 1, 5)
+	binner = RedshiftSpacePowerBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
+	y0, y1, y2, y3, y4, y5 = binner.bin_function(lambda k, mu: k * mu ** 2)
+
+	assert not allclose(y0, 0)
+	assert allclose(y1, 0)
+	assert not allclose(y2, 0)
+	assert allclose(y3, 0)
+	assert not allclose(y4, 0)
+	assert allclose(y5, 0)
