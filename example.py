@@ -43,8 +43,8 @@ plt.xlabel('x')
 plt.ylabel('Peff/Pbin - 1')
 plt.show()
 
-plt.semilogx(x_bin * kF, Pk0)
-plt.semilogx(x_bin * kF, Pk2)
-plt.semilogx(x_bin * kF, Pk4)
+plt.plot(x_bin * kF, x_eff * kF * Pk0)
+plt.plot(x_bin * kF, x_eff * kF * Pk2)
+plt.plot(x_bin * kF, x_eff * kF * Pk4)
 
 plt.show()
