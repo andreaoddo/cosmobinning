@@ -1,5 +1,5 @@
 import pytest
-from cosmobinning.lib import Bins, Bin, RealSpacePowerBinner, RedshiftSpacePowerBinner
+from cosmobinning.lib import Bins, Bin, RealSpacePowerAverageBinner, RedshiftSpacePowerAverageBinner
 from numpy import arange, sqrt, allclose, array
 
 
@@ -70,7 +70,7 @@ def test_mode_counts():
 
 def test_bin_function():
 	bins = Bins.linear_bins(1, 1, 5)
-	binner = RealSpacePowerBinner(bins)
+	binner = RealSpacePowerAverageBinner(bins)
 	x_binned = binner.bin_function(lambda x: x)
 
 	expected = [1.2761424, 2.2308031, 3.1341592, 4.0605798, 5.0975831]
@@ -80,7 +80,7 @@ def test_bin_function():
 
 def test_redshift_space_binning_of_odd_function_returns_null_even_multipoles():
 	bins = Bins.linear_bins(1, 1, 5)
-	binner = RedshiftSpacePowerBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
+	binner = RedshiftSpacePowerAverageBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
 	y0, y1, y2, y3, y4, y5 = binner.bin_function(lambda k, mu: k * mu)
 
 	assert allclose(y0, 0)
@@ -93,7 +93,7 @@ def test_redshift_space_binning_of_odd_function_returns_null_even_multipoles():
 
 def test_redshift_space_binning_of_even_function_returns_null_odd_multipoles():
 	bins = Bins.linear_bins(1, 1, 5)
-	binner = RedshiftSpacePowerBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
+	binner = RedshiftSpacePowerAverageBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
 	y0, y1, y2, y3, y4, y5 = binner.bin_function(lambda k, mu: k * mu ** 2)
 
 	assert not allclose(y0, 0)
