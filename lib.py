@@ -5,10 +5,7 @@ from enum import Enum, auto
 from warnings import warn
 from time import sleep
 
-import numpy as np
-from numpy import ndarray, int16, int32, float64
-from numpy import arange, linspace, digitize, bincount, meshgrid, fromiter, flip, fromfunction, zeros, divide, array, \
-	absolute, logspace
+from numpy import ndarray, int16, int32, float64, arange, linspace, digitize, bincount, meshgrid, fromiter, flip, fromfunction, zeros, divide, array, absolute, logspace
 from numpy import sqrt as npsqrt
 from numpy import sum as npsum
 from typing import Callable, Optional
@@ -327,7 +324,7 @@ class RealSpacePowerEffectiveBinner(Binner):
 		pos = bins.bin_positions()
 		self.bin_counts = bincount(pos, weights=counts)
 
-	def bin_function(self, power: Callable, x_scale: float = 1.0) -> ndarray:
+	def bin_function(self, power: Callable[[float | ndarray], float | ndarray], x_scale: float = 1.0) -> ndarray:
 		"""
 		Computes the bin average of the given isotropic function, using the Effective method
 		:param power: Real function with domain in |R
@@ -358,16 +355,18 @@ class RealSpacePowerExpansionBinner(Binner):
 		pos = bins.bin_positions()
 		self.bin_counts = bincount(pos, weights=counts)
 
-	def bin_function(self, power: Callable, x_scale: float = 1.0) -> ndarray:
+	def bin_function(self, power: Callable[[float | ndarray], float | ndarray], x_scale: float = 1.0) -> ndarray:
 		"""
 		Computes the bin average of the given isotropic function, using the Effective method
 		:param power: Real function with domain in |R
 		:type power: Callable[[float | ndarray], float | ndarray]
+		:param x_scale: scale on the x-axis (usually equals the fundamental frequency), defaults to 1
+		:type x_scale: float
 		:return: Bin average of the given function
 		:rtype: ndarray
 		"""
-		return (power(self.k_eff*x_scale) + np.fromiter(
-			map(lambda k: derivative(power, k, dx=1.e-4, n=2), self.k_eff*x_scale), dtype=float64) * self.mom_2 * x_scale **2 / 2)
+		return (power(self.k_eff*x_scale) + fromiter(
+			map(lambda k: derivative(power, k, dx=1.e-4, n=2), self.k_eff*x_scale), dtype=float64) * self.mom_2 * x_scale ** 2 / 2)
 
 
 class RedshiftSpacePowerAverageBinner(Binner):
@@ -403,7 +402,7 @@ class RedshiftSpacePowerAverageBinner(Binner):
 		divide(self.z_values[None, :], self.inputs[:, None], out=cos_theta, where=(self.inputs_squared[:, None] != 0))
 
 		self.masked_legendre_times_counts = \
-			eval_legendre(arr_multipoles, cos_theta[None, :], dtype=np.float64) * \
+			eval_legendre(arr_multipoles, cos_theta[None, :], dtype=float64) * \
 			(absolute(self.z_values[None, :]) <= self.inputs[:, None]) * \
 			fromfunction(lambda i, j: self.counts[i - (j - bins.grid_size()) ** 2], (len(self.inputs), len(self.z_values)), dtype=int16)
 		del cos_theta
@@ -414,9 +413,7 @@ class RedshiftSpacePowerAverageBinner(Binner):
 		:return: Size of the object in bytes
 		:rtype: int
 		"""
-		return (getsizeof(self.bins) + self.counts.nbytes + self.pos.nbytes + getsizeof(True) + self.bin_counts.nbytes
-		        + self.inputs_squared.nbytes + self.inputs.nbytes + self.z_values.nbytes + getsizeof(self.multipoles)
-		        + self.masked_legendre_times_counts.nbytes)
+		return getsizeof(self.bins) + self.counts.nbytes + self.pos.nbytes + getsizeof(True) + self.bin_counts.nbytes + self.inputs_squared.nbytes + self.inputs.nbytes + self.z_values.nbytes + getsizeof(self.multipoles) + self.masked_legendre_times_counts.nbytes
 
 	def bin_function(self, power: Callable[[ndarray, ndarray], ndarray], x_scale: float = 1.0) -> list[ndarray]:
 		"""
@@ -494,10 +491,10 @@ class RedshiftSpacePowerExpansionBinner(Binner):
 		binner = RedshiftSpacePowerAverageBinner(bins, multipoles)
 		self.effective_k = binner.bin_function(lambda k, mu: k)[0]
 
-		self.pi_dji = np.zeros([3, len(self.internal_multipoles), len(self.multipoles), len(self.bins.bins)])
+		self.pi_dji = zeros([3, len(self.internal_multipoles), len(self.multipoles), len(self.bins.bins)])
 		for (j, el_prime) in enumerate(self.internal_multipoles):
 			for d in range(3):
-				self.pi_dji[d, j] = binner.bin_function(lambda k, mu: k ** d * eval_legendre(el_prime, mu)) / (2 * self.multipoles + 1)[:, None]
+				self.pi_dji[d, j] = array(binner.bin_function(lambda k, mu: k ** d * eval_legendre(el_prime, mu))) / (2 * self.multipoles + 1)[:, None]
 
 		self.pi_dji[2] += self.pi_dji[0] * self.effective_k[None, None, :] ** 2 - 2 * self.effective_k[None, None, :] * self.pi_dji[1]
 		self.pi_dji[1] -= self.pi_dji[0] * self.effective_k[None, None, :]
