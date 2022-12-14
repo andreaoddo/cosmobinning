@@ -196,57 +196,40 @@ class Bins:
 			yield 2 * count_flipped[squares[:isqrt(q2) + 1]].sum() - count_flipped[0]
 
 
-class BinningMethod(Enum):
-	"""
-	Enum-like class enumerating all possible binning methods supported
-	"""
-	AVERAGE = auto()
-	EFFECTIVE = auto()
-	EXPANSION = auto()
-
-
-class Space(Enum):
-	"""
-	Enum-like class representing either real-space or redshift-space
-	"""
-	REAL = auto()
-	REDSHIFT = auto()
-
-
-class BinnerFactory:
+class PowerBinner:
 	"""
 	Common builder for all possible implemented Binners; hides details on specific Binner instances
 	"""
 
 	@staticmethod
-	def build(bins: Bins, method: BinningMethod, space: Space, multipoles: Optional[list[int]] = None) -> Binner:
+	def new(bins: Bins, method: str, space: str, multipoles: Optional[list[int]] = None) -> Binner:
 		"""
 		Builds a Binner object specific for the input parameters
 		:param bins: Bins object to be used by the Binner
 		:type bins: Bins
-		:param method: binning method to be used by the Binner
-		:type method: BinningMethod
-		:param space: whether the Binner is supposed to be for real or redshift space
-		:type space: Space
+		:param method: binning method to be used by the Binner, ["average" | "effective" | "expansion"]
+		:type method: str
+		:param space: whether the Binner is supposed to be for real or redshift space, ["real" | "redshift"]
+		:type space: str
 		:param multipoles: optional list of multipoles for a redshift-space binner, must not be specified if Space.REAL; defaults to None, corresponding to l = [0,2,4]
 		:type multipoles: Optional[list[int]]
 		:return: Returns a Binner instance corresponding to the input parameters
 		:rtype: Binner
 		"""
-		if space is Space.REAL:
+		if space.lower() == "real":
 			assert multipoles is None, "Multipoles don't have to be specified in real space"
-			if method is BinningMethod.AVERAGE:
+			if method.lower() == "average":
 				return RealSpacePowerAverageBinner(bins)
-			elif method is BinningMethod.EFFECTIVE:
+			elif method.lower() == "effective":
 				return RealSpacePowerEffectiveBinner(bins)
-			elif method is BinningMethod.EXPANSION:
+			elif method.lower() == "expansion":
 				return RealSpacePowerExpansionBinner(bins)
-		elif space is Space.REDSHIFT:
-			if method is BinningMethod.AVERAGE:
+		elif space.lower() == "redshift":
+			if method.lower() == "average":
 				return RedshiftSpacePowerAverageBinner(bins, multipoles)
-			elif method is BinningMethod.EFFECTIVE:
+			elif method.lower() == "effective":
 				return RedshiftSpacePowerEffectiveBinner(bins, multipoles)
-			elif method is BinningMethod.EXPANSION:
+			elif method.lower() == "expansion":
 				return RedshiftSpacePowerExpansionBinner(bins, multipoles)
 
 		raise NotImplementedError
