@@ -1,4 +1,4 @@
-from cosmobinning.lib import Bins, BinnerFactory, BinningMethod, Space
+from cosmobinning.lib import Bins, PowerBinner
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
@@ -21,9 +21,9 @@ def redshift_space_power_spectrum(k, mu):
 
 
 bins = Bins.linear_bins(1.0, 1.0, 128)
-binner = BinnerFactory.build(bins, BinningMethod.AVERAGE, Space.REAL)
-eff_binner = BinnerFactory.build(bins, BinningMethod.EFFECTIVE, Space.REAL)
-exp_binner = BinnerFactory.build(bins, BinningMethod.EXPANSION, Space.REAL)
+binner = PowerBinner.new(bins, "average", "real")
+eff_binner = PowerBinner.new(bins, "effective", "real")
+exp_binner = PowerBinner.new(bins, "expansion", "real")
 
 x_val = bins.square_roots_range()
 y_val = real_space_power_spectrum(x_val)
@@ -33,9 +33,9 @@ y_bin = binner.bin_function(real_space_power_spectrum, x_scale=kF)
 y_eff = eff_binner.bin_function(real_space_power_spectrum, x_scale=kF)
 y_exp = exp_binner.bin_function(real_space_power_spectrum, x_scale=kF)
 
-z_binner = BinnerFactory.build(bins, BinningMethod.AVERAGE, Space.REDSHIFT)
-z_binner_eff = BinnerFactory.build(bins, BinningMethod.EFFECTIVE, Space.REDSHIFT)
-z_binner_exp = BinnerFactory.build(bins, BinningMethod.EXPANSION, Space.REDSHIFT)
+z_binner = PowerBinner.new(bins, "average", "redshift")
+z_binner_eff = PowerBinner.new(bins, "effective", "redshift")
+z_binner_exp = PowerBinner.new(bins, "expansion", "redshift")
 
 Pk0, Pk2, Pk4 = z_binner.bin_function(redshift_space_power_spectrum, x_scale=kF)
 Pk0e, Pk2e, Pk4e = z_binner_eff.bin_function(redshift_space_power_spectrum, x_scale=kF)
