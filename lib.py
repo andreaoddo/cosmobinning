@@ -64,15 +64,18 @@ class Bin:
 
 
 class Bins:
-	def __init__(self, bins: list[Bin]) -> None:
+	def __init__(self, bins: list[Bin], right_open: bool = True) -> None:
 		"""
 		Initializes a Bins instance object
 		:param bins: A list of Bin objects
 		:type bins: list[Bin]
+		:param right_open: Indicates whether bins are right-open or not, defaults to True
+		:type right_open: bool
 		"""
 		for (i, b) in enumerate(bins[:-1]):
 			assert bins[i].sup == bins[i + 1].inf
 		self.bins = bins
+		self.right_open = right_open
 
 	def __repr__(self):
 		"""
@@ -99,7 +102,7 @@ class Bins:
 		return list(map(lambda b: b.center(), self.bins))
 
 	@staticmethod
-	def linear_bins(first_center: float, width: float, bins: int) -> Bins:
+	def linear_bins(first_center: float, width: float, bins: int, right_open: bool = True) -> Bins:
 		"""
 		Constructor static method to create a Bins instance object with linearly spaced bins with equal width
 		:param first_center: Center of the first bin
@@ -108,10 +111,12 @@ class Bins:
 		:type width: float
 		:param bins: Number of bins
 		:type bins: int
+		:param right_open: Indicates whether bins are right-open or not, defaults to True
+		:type right_open: bool
 		:return: Bins instance object with linearly spaced bins
 		:rtype: Bins
 		"""
-		return Bins([Bin(first_center + (i - 0.5) * width, first_center + (i + 0.5) * width) for i in range(bins)])
+		return Bins([Bin(first_center + (i - 0.5) * width, first_center + (i + 0.5) * width) for i in range(bins)], right_open = right_open)
 
 	def edges(self) -> list[float]:
 		"""
@@ -152,7 +157,7 @@ class Bins:
 		:return: bin positions of all values in square_roots_range()
 		:rtype: ndarray
 		"""
-		return digitize(self.square_roots_range(), self.edges())
+		return digitize(self.square_roots_range(), self.edges(), right = not self.right_open)
 
 	def mode_counts_3d(self) -> ndarray:
 		"""
