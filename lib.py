@@ -168,7 +168,7 @@ class Bins:
 		:return: bin positions of all values in square_roots_range()
 		:rtype: ndarray
 		"""
-		return digitize(self.square_roots_range(), self.edges(), right = not self.right_open)
+		return digitize(self.square_roots_range(), self.edges(), right=not self.right_open)
 
 	def mode_counts_3d(self) -> ndarray:
 		"""
@@ -226,7 +226,7 @@ class BinningScheme:
 		if self.right_open != other.right_open:
 			return False
 
-		width_ratio = other.width/self.width
+		width_ratio = other.width / self.width
 		if not width_ratio.is_integer() or width_ratio < 1:
 			return False
 
@@ -240,13 +240,10 @@ class BinningScheme:
 			for in_b in input_bins.bins:
 				check_inf = check_inf or (in_b.inf == out_b.inf)
 				check_sup = check_sup or (in_b.sup == out_b.sup)
-			if not(check_inf and check_sup):
+			if not (check_inf and check_sup):
 				return False
 
 		return True
-
-
-
 
 
 class PowerBinner:
@@ -338,7 +335,7 @@ class RealSpacePowerAverageBinner(Binner):
 		:return: Bin average of the given function
 		:rtype: ndarray
 		"""
-		result = bincount(self.pos, weights=power(self.inputs*x_scale) * self.counts) / self.bin_counts
+		result = bincount(self.pos, weights=power(self.inputs * x_scale) * self.counts) / self.bin_counts
 		if self.zero_pos:
 			return result[1:]
 		return result
@@ -370,7 +367,7 @@ class RealSpacePowerEffectiveBinner(Binner):
 		:return: Bin average of the given function
 		:rtype: ndarray
 		"""
-		return power(self.k_effective*x_scale)
+		return power(self.k_effective * x_scale)
 
 
 class RealSpacePowerExpansionBinner(Binner):
@@ -401,8 +398,8 @@ class RealSpacePowerExpansionBinner(Binner):
 		:return: Bin average of the given function
 		:rtype: ndarray
 		"""
-		return (power(self.k_eff*x_scale) + fromiter(
-			map(lambda k: derivative(power, k, dx=1.e-4, n=2), self.k_eff*x_scale), dtype=float64) * self.mom_2 * x_scale ** 2 / 2)
+		return (power(self.k_eff * x_scale) + fromiter(
+			map(lambda k: derivative(power, k, dx=1.e-4, n=2), self.k_eff * x_scale), dtype=float64) * self.mom_2 * x_scale ** 2 / 2)
 
 
 class RedshiftSpacePowerAverageBinner(Binner):
@@ -461,7 +458,7 @@ class RedshiftSpacePowerAverageBinner(Binner):
 		:return: Bin average of the multipoles of the given function
 		:rtype: ndarray
 		"""
-		weights = npsum(self.masked_legendre_times_counts * power(self.inputs[:, None]*x_scale, divide(self.z_values[None, :], self.inputs[:, None], where=(self.inputs_squared[:, None] != 0)))[None, :], axis=2)
+		weights = npsum(self.masked_legendre_times_counts * power(self.inputs[:, None] * x_scale, divide(self.z_values[None, :], self.inputs[:, None], where=(self.inputs_squared[:, None] != 0)))[None, :], axis=2)
 
 		result = [(2 * l + 1) * bincount(self.pos, weights=w) / self.bin_counts for (l, w) in zip(self.multipoles, weights)]
 
@@ -504,7 +501,7 @@ class RedshiftSpacePowerEffectiveBinner(Binner):
 		:return: Bin average of the multipoles of the given function
 		:rtype: ndarray
 		"""
-		function = power(self.pseudo_k[None, :, None]*x_scale, self.pseudo_mu[None, None, :])
+		function = power(self.pseudo_k[None, :, None] * x_scale, self.pseudo_mu[None, None, :])
 		f_l = simpson(self.legendre * function, self.pseudo_mu, axis=-1)
 		return array([(l + 0.5) * InterpolatedUnivariateSpline(self.pseudo_k, f_l[i], k=3)(self.effective_k) for (i, l) in enumerate(self.multipoles)])
 
@@ -549,7 +546,7 @@ class RedshiftSpacePowerExpansionBinner(Binner):
 		:return: Bin average of the multipoles of the given function
 		:rtype: ndarray
 		"""
-		function = power(self.pseudo_k[None, :, None]*x_scale, self.pseudo_mu[None, None, :])
+		function = power(self.pseudo_k[None, :, None] * x_scale, self.pseudo_mu[None, None, :])
 		power_l = simpson(self.legendre * function, self.pseudo_mu, axis=-1)
 		power_q_l = [InterpolatedUnivariateSpline(self.pseudo_k, (l + 0.5) * power_l[i], k=3) for (i, l) in enumerate(self.internal_multipoles)]
 
@@ -582,7 +579,7 @@ class TriangleBin:
 
 
 class TriangleBins:
-	def __init__(self, bins: list[TriangleBin], right_open: bool = True, open_triangles = True):
+	def __init__(self, bins: list[TriangleBin], right_open: bool = True, open_triangles=True):
 		self.bins = bins
 		self.right_open = right_open
 		self.open_triangles = open_triangles
@@ -593,8 +590,8 @@ class TriangleBins:
 		lin_bins = []
 
 		for i1 in range(binning_scheme.bin_count):
-			for i2 in range(i1+1):
-				for i3 in range(i2+1):
+			for i2 in range(i1 + 1):
+				for i3 in range(i2 + 1):
 					k1 = one_d_bins.bins[i1]
 					k2 = one_d_bins.bins[i2]
 					k3 = one_d_bins.bins[i3]
@@ -613,16 +610,15 @@ class OrderedTriangle:
 		self.med = a + b + c - self.sup - self.inf
 
 	def __add__(self, other: OrderedTriangle) -> OrderedTriangle:
-		return OrderedTriangle(self.sup+other.sup, self.med+other.med, self.inf+other.inf)
+		return OrderedTriangle(self.sup + other.sup, self.med + other.med, self.inf + other.inf)
 
 	def __mul__(self, other: float) -> OrderedTriangle:
 		assert other > 0
-		return OrderedTriangle(other*self.sup, other*self.med, other*self.inf)
+		return OrderedTriangle(other * self.sup, other * self.med, other * self.inf)
 
 	def __rmul__(self, other):
 		assert other > 0
-		return OrderedTriangle(other*self.sup, other*self.med, other*self.inf)
-
+		return OrderedTriangle(other * self.sup, other * self.med, other * self.inf)
 
 
 class RealSpaceBispectrumEffectiveBinner(Binner):
@@ -632,7 +628,7 @@ class RealSpaceBispectrumEffectiveBinner(Binner):
 		self.counts = counts
 
 	def bin_function(self, function: Callable, x_scale: float = 1.0) -> ndarray:
-		return array([function(t.sup*x_scale, t.med*x_scale, t.inf*x_scale) for t in self.effective_triangles])
+		return array([function(t.sup * x_scale, t.med * x_scale, t.inf * x_scale) for t in self.effective_triangles])
 
 	@staticmethod
 	def new(binning_scheme: BinningScheme, open_triangles: bool = True) -> RealSpaceBispectrumEffectiveBinner:
@@ -676,7 +672,7 @@ class RealSpaceBispectrumEffectiveBinner(Binner):
 		input_linear_bins = Bins.linear_bins(from_scheme)
 		output_linear_bins = Bins.linear_bins(to_scheme)
 
-		mapping = { b: next((c for c in output_linear_bins.bins if c.contains(b.center())), None) for b in input_linear_bins.bins }
+		mapping = {b: next((c for c in output_linear_bins.bins if c.contains(b.center())), None) for b in input_linear_bins.bins}
 		triangle_mapping = {}
 		for triangle_input_bin in self.bins.bins:
 			b1 = mapping[triangle_input_bin.bin1]
@@ -686,25 +682,31 @@ class RealSpaceBispectrumEffectiveBinner(Binner):
 				triangle_mapping[triangle_input_bin] = TriangleBin(b1, b2, b3)
 			else:
 				triangle_mapping[triangle_input_bin] = None
-		bins_to_index_mapping = { output_triangle_bin: i for i, output_triangle_bin in enumerate(new_bins.bins) }
+		bins_to_index_mapping = {output_triangle_bin: i for i, output_triangle_bin in enumerate(new_bins.bins)}
 
 		for j, input_triangle_bin in enumerate(self.bins.bins):
 			output_triangle_bin = triangle_mapping.get(input_triangle_bin)
 			if output_triangle_bin is not None:
 				idx = bins_to_index_mapping.get(output_triangle_bin)
 				if idx is not None:
-					print(j)
 					count = self.counts[j]
 					new_counts[idx] += count
 					new_effective[idx] += count * self.effective_triangles[j]
 
 		for i in range(len(new_binner.bins.bins)):
-			new_effective[i] = new_effective[i] * (1/new_counts[i])
-			print(new_bins.bins[i].bin1, new_bins.bins[i].bin2, new_bins.bins[i].bin3, new_effective[i].sup, new_effective[i].med, new_effective[i].inf, new_counts[i])
+			new_effective[i] = new_effective[i] * (1 / new_counts[i])
 		new_binner.effective_triangles = new_effective
 		new_binner.counts = new_counts
 		return new_binner
 
+
 class InvalidBispectrumBinningSchemeException(Exception):
 	"The binning scheme selected for the bispectrum is invalid. Only schemes that can be remapped from BinningScheme(0.5, 1, 64) or BinningScheme(1, 1, 64) are valid."
 	pass
+
+
+class BispectrumBinner:
+	@staticmethod
+	def new(scheme: BinningScheme, open_triangles: bool = True) -> Binner:
+		warn("Only the creation of a RealSpaceBispectrumEffectiveBinner is currently supported")
+		return RealSpaceBispectrumEffectiveBinner.new(scheme, open_triangles)
