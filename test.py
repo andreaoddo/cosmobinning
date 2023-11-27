@@ -1,5 +1,5 @@
 import pytest
-from cosmobinning.lib import Bins, Bin, RealSpacePowerAverageBinner, RedshiftSpacePowerAverageBinner
+from cosmobinning.lib import Bins, Bin, RealSpacePowerAverageBinner, RedshiftSpacePowerAverageBinner, BinningScheme
 from numpy import arange, sqrt, allclose, array
 
 
@@ -19,7 +19,7 @@ def test_bins_centers():
 
 
 def test_linear_bins():
-	bins = Bins.linear_bins(1.0, 1.0, 3)
+	bins = Bins.linear_bins(BinningScheme(1.0, 1.0, 3))
 
 	exp_bins = Bins([
 		Bin(0.5, 1.5), Bin(1.5, 2.5), Bin(2.5, 3.5)
@@ -29,39 +29,39 @@ def test_linear_bins():
 
 
 def test_edges():
-	bins = Bins.linear_bins(0.5, 1, 5)
+	bins = Bins.linear_bins(BinningScheme(0.5, 1, 5))
 	exp_edges = [0, 1, 2, 3, 4, 5]
 
 	assert exp_edges == bins.edges()
 
 
 def test_int_max():
-	bins = Bins.linear_bins(1, 1.5, 20)
+	bins = Bins.linear_bins(BinningScheme(1, 1.5, 20))
 
 	assert 30 == bins.grid_size()
 
 
 def test_squared_max():
-	bins = Bins.linear_bins(1, 1.5, 20)
+	bins = Bins.linear_bins(BinningScheme(1, 1.5, 20))
 
 	assert 915 == bins.squared_max()
 
 
 def test_square_roots_range():
-	bins = Bins.linear_bins(1, 1, 10)
+	bins = Bins.linear_bins(BinningScheme(1, 1, 10))
 
 	assert allclose(sqrt(arange(110 + 1)), bins.square_roots_range())
 
 
 def test_bin_positions():
-	bins = Bins.linear_bins(0.75, 0.5, 5)
+	bins = Bins.linear_bins(BinningScheme(0.75, 0.5, 5))
 	exp_positions = array([0, 2, 2, 3, 4, 4, 4, 5, 5])
 
 	assert allclose(exp_positions, bins.bin_positions())
 
 
 def test_mode_counts():
-	bins = Bins.linear_bins(1, 1, 3)
+	bins = Bins.linear_bins(BinningScheme(1, 1, 3))
 
 	exp_counts = [1, 6, 12, 8, 6, 24, 24, 0, 12, 30, 24, 24, 8]
 
@@ -69,7 +69,7 @@ def test_mode_counts():
 
 
 def test_bin_function():
-	bins = Bins.linear_bins(1, 1, 5)
+	bins = Bins.linear_bins(BinningScheme(1, 1, 5))
 	binner = RealSpacePowerAverageBinner(bins)
 	x_binned = binner.bin_function(lambda x: x)
 
@@ -79,7 +79,7 @@ def test_bin_function():
 
 
 def test_redshift_space_binning_of_odd_function_returns_null_even_multipoles():
-	bins = Bins.linear_bins(1, 1, 5)
+	bins = Bins.linear_bins(BinningScheme(1, 1, 5))
 	binner = RedshiftSpacePowerAverageBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
 	y0, y1, y2, y3, y4, y5 = binner.bin_function(lambda k, mu: k * mu)
 
@@ -92,7 +92,7 @@ def test_redshift_space_binning_of_odd_function_returns_null_even_multipoles():
 
 
 def test_redshift_space_binning_of_even_function_returns_null_odd_multipoles():
-	bins = Bins.linear_bins(1, 1, 5)
+	bins = Bins.linear_bins(BinningScheme(1, 1, 5))
 	binner = RedshiftSpacePowerAverageBinner(bins, multipoles=[0, 1, 2, 3, 4, 5])
 	y0, y1, y2, y3, y4, y5 = binner.bin_function(lambda k, mu: k * mu ** 2)
 
