@@ -294,11 +294,11 @@ class Binner(ABC):
 	"""
 
 	@abstractmethod
-	def bin_function(self, power: Callable, x_scale: float = 1.0) -> ndarray:
+	def bin_function(self, function: Callable, x_scale: float = 1.0) -> ndarray:
 		"""
 		Interface method to be implemented by all concrete Binner types. Computes the binning of the given function for the method specified in construction
-		:param power: function to be binned
-		:type power: Callable
+		:param function: function to be binned
+		:type function: Callable
 		:param x_scale: scale on the x-axis (usually equals the fundamental frequency), defaults to 1
 		:type x_scale: float
 		"""
@@ -625,11 +625,14 @@ class OrderedTriangle:
 
 
 
-class RealSpaceBispectrumEffectiveBinner:
+class RealSpaceBispectrumEffectiveBinner(Binner):
 	def __init__(self, bins: TriangleBins, effective_triangles: list[OrderedTriangle], counts: list[int]):
 		self.bins = bins
 		self.effective_triangles = effective_triangles
 		self.counts = counts
+
+	def bin_function(self, function: Callable, x_scale: float = 1.0) -> ndarray:
+		return array([function(t.sup*x_scale, t.med*x_scale, t.inf*x_scale) for t in self.effective_triangles])
 
 	@staticmethod
 	def new(binning_scheme: BinningScheme, open_triangles: bool = True) -> RealSpaceBispectrumEffectiveBinner:
